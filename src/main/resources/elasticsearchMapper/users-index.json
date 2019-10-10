@@ -1,0 +1,57 @@
+{
+  "settings": {
+    "index" : {
+      "number_of_shards" : 5,
+      "number_of_replicas" : 2
+    }
+  },
+  "mappings": {
+    "userInfo": {
+      "_source" : {
+        "enabled": true
+      },
+      "properties": {
+        "name" : {
+          "type" : "text"
+        },
+        "email" : {
+          "type" : "keyword",
+
+        },
+        "passHash" : {
+          "type" : "keyword",
+          "index" : false
+        },
+        "role" : {
+          "type" : "keyword"
+        },
+        "googleAuth" : {
+          "type" : "boolean"
+        },
+        "googleTokenResponse" : {
+          "enabled" : false,
+          "properties" : {
+            "idToken" : {
+              "type" : "keyword"
+            },
+            "accessToken" : {
+              "type" : "keyword"
+            },
+            "tokenType" : {
+              "type" : "keyword"
+            },
+            "expiresInSeconds" : {
+              "type" : "long"
+            },
+            "refreshToken" : {
+              "type" : "keyword"
+            },
+            "scope" : {
+              "type" : "keyword"
+            }
+          }
+        }
+      }
+    }
+  }
+}
