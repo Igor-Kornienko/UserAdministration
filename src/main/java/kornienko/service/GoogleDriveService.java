@@ -20,6 +20,7 @@ import kornienko.listener.FileUploadProgressListener;
 import kornienko.model.User;
 import kornienko.security.JwtTokenProvider;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -67,7 +68,7 @@ public class GoogleDriveService {
     }
 
     private File createGoogleFile(GoogleCredential googleCredential, String googleFolderIdParent, String contentType,
-                                   String customFileName, InputStream inputStream, long size) throws IOException {
+                                  String customFileName, InputStream inputStream, long size) throws IOException {
 
         AbstractInputStreamContent uploadStreamContent = new InputStreamContent(contentType, inputStream);
         File fileMetadata = new File();
@@ -89,39 +90,39 @@ public class GoogleDriveService {
         return createF.execute();
     }
 
-    public List<File> getAllFiles(String jwt) throws IOException {
+    public ResponseEntity<?> getAllFiles(String jwt) throws IOException {
         GoogleCredential googleCredential = getCredentialFromResponseToken(jwt);
         if (googleCredential != null) {
             Drive service = getDrive(googleCredential);
             FileList result = service.files().list()
                     .setFields("nextPageToken, files(id, name)")
                     .execute();
-            return result.getFiles();
+            return ResponseEntity.ok(result.getFiles());
         } else {
-            return null;
+            return ResponseEntity.badRequest().body("Haven`t google auth");
         }
     }
 
-    public String uploadFile(String name, MultipartFile file, String jwt){
-        if (!file.isEmpty()) {
-            try {
-                if (name.equals("")) {
-                    name = file.getOriginalFilename();
-                }
-                GoogleCredential googleCredential = getCredentialFromResponseToken(jwt);
-                if (googleCredential != null) {
-                    return "File ID: " + createGoogleFile(googleCredential, null, file.getContentType(), name, file.getInputStream(), file.getSize()).getId();
-                }
-                return "no google auth";
-            } catch (Exception e) {
-                return e.getMessage();
+    public ResponseEntity<?> uploadFile(String name, MultipartFile file, String jwt){
+        if (file.isEmpty()) {
+            return ResponseEntity.badRequest().body("File is empty");
+        }
+        try {
+            if (name.equals("")) {
+                name = file.getOriginalFilename();
             }
-        } else {
-            return "file is empty!";
+            GoogleCredential googleCredential = getCredentialFromResponseToken(jwt);
+            if (googleCredential != null) {
+                return ResponseEntity.ok("File ID: " + createGoogleFile(googleCredential, null, file.getContentType(), name, file.getInputStream(), file.getSize()).getId());
+            }
+            return ResponseEntity.badRequest().body("Haven`t google auth");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
-    public void downloadFile(String id, HttpServletResponse response, String jwt) throws IOException {
+
+    public ResponseEntity<?> downloadFile(String id, HttpServletResponse response, String jwt) throws IOException {
         GoogleCredential googleCredential = getCredentialFromResponseToken(jwt);
         if (googleCredential != null) {
             Drive service = getDrive(googleCredential);
@@ -137,11 +138,14 @@ public class GoogleDriveService {
             downloader.setChunkSize(1024 * 1024 * 8);
             downloader.setProgressListener(new FileDownloadProgressListener(gFile.getName()));
             fileGet.executeMediaAndDownloadTo(response.getOutputStream());
+
+            return ResponseEntity.ok("Download started");
         }
+        return ResponseEntity.badRequest().body("Haven`t google auth");
     }
 
     private GoogleCredential getCredentialFromResponseToken(String jwt){
-        String email = jwtTokenProvider.getUserEmailFromJwt(jwt);
+        String email = jwtTokenProvider.getUserEmailFromJwt(jwt.substring(7));
         User user = elasticsearchService.findUserByEmail(email);
         if (user.getGoogleAuth()) {
             return new GoogleCredential().setFromTokenResponse(user.getGoogleTokenResponse());

@@ -12,6 +12,7 @@ import com.google.api.services.plus.PlusScopes;
 import kornienko.model.User;
 import kornienko.security.JwtTokenProvider;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -61,15 +62,16 @@ public class AuthService {
                 .build();
     }
 
-    public String googleAuthUrl(){
-        return flow
+    public ResponseEntity<?> googleAuthUrl(){
+        String url =  flow
                 .newAuthorizationUrl()
                 .setRedirectUri(clientSecrets.getDetails().getRedirectUris().get(0))
                 .setAccessType("offline")
                 .build();
+        return ResponseEntity.ok(url);
     }
 
-    public String codeExchange(String accessToken) throws IOException, InterruptedException {
+    public ResponseEntity<?> codeExchange(String accessToken) throws IOException, InterruptedException {
         if (!accessToken.equals("")) {
             GoogleTokenResponse tokenResponse = flow.newTokenRequest(accessToken).setRedirectUri(clientSecrets.getDetails().getRedirectUris().get(0)).execute();
             String id = userElasticsearchService.userExist(tokenResponse.parseIdToken().getPayload().getEmail());
@@ -98,12 +100,12 @@ public class AuthService {
                     )
             );
             SecurityContextHolder.getContext().setAuthentication(authentication);
-            return "Bearer " + tokenProvider.generateToken(authentication);
+            return ResponseEntity.ok("Bearer " + tokenProvider.generateToken(authentication));
         }
-        return "";
+        return ResponseEntity.badRequest().body("Not valid access token");
     }
 
-    public String signIn(String name, String password){
+    public ResponseEntity<?> signIn(String name, String password){
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         name,
@@ -112,15 +114,15 @@ public class AuthService {
         );
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
-        return "Bearer " + tokenProvider.generateToken(authentication);
+        return ResponseEntity.ok("Bearer " + tokenProvider.generateToken(authentication));
     }
 
-    public String signUp(String email, String password, String name){
+    public ResponseEntity<?> signUp(String email, String password, String name){
 
         String id = userElasticsearchService.userExist(email);
         System.out.println(id);
         if (!(id == null)) {
-            return "This email already in use";
+            return ResponseEntity.badRequest().body("This email already in use");
         }
 
         User user = new User();
@@ -131,10 +133,10 @@ public class AuthService {
         user.setRole("ROLE_USER");
         userElasticsearchService.saveUser(user);
 
-        return "user created";
+        return ResponseEntity.ok("user created");
     }
 
-    public void getAllData(){
-        userElasticsearchService.searchAllTestData();
+    public ResponseEntity<?> users(){
+        return ResponseEntity.ok(userElasticsearchService.searchAllTestData());
     }
 }

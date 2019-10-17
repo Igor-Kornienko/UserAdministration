@@ -28,7 +28,9 @@ import java.io.*;
 import java.net.InetAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class UserElasticsearchService {
@@ -118,13 +120,13 @@ public class UserElasticsearchService {
         return null;
     }
 
-    public void searchAllTestData() {
+    public Map<String, User> searchAllTestData() {
         SearchResponse response = client.prepareSearch().setSize(1000).execute().actionGet();
         List<SearchHit> searchHits = Arrays.asList(response.getHits().getHits());
-        System.out.println(searchHits.size());
+        Map<String, User> users = new HashMap<>();
         searchHits.forEach(hit -> {
-            System.out.println("Id: " + hit.getId() + " " + gson.fromJson(hit.getSourceAsString(), User.class));
+            users.put(hit.getId(), gson.fromJson(hit.getSourceAsString(), User.class));
         });
-        System.out.println();
+        return users;
     }
 }

@@ -6,72 +6,8 @@
 
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
           integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
-    <script src="https://code.jquery.com/jquery-3.3.1.js" integrity="sha256-2Kok7MbOyxpgUVvAk/HJ2jigOSYS2auK4Pfzbm7uH60=" crossorigin="anonymous"></script>
 </head>
 <body>
-<div class="w-screen height-full row">
-    <div class="col-2 m-3 pb-5">
-        <div>
-            <div class="form-group">
-                <label id="jwt"></label>
-                <label for="inputEmail1">Email address</label>
-                <input type="email" class="form-control" id="inputEmail1" aria-describedby="emailHelp" placeholder="Enter email">
-            </div>
-
-            <div class="form-group">
-                <label for="inputPassword1">Password</label>
-                <input type="password" class="form-control" id="inputPassword1" placeholder="Password">
-            </div>
-
-            <button onclick="signIn()" class="btn btn-primary">Submit</button>
-            <a href="/getGoogleAuthUrl" class="btn btn-primary mt-2">Auth with Google</a>
-        </div>
-
-        <div class="pt-5">
-            <h5 class="text-center pb-2">Register</h5>
-            <form action="/auth/signIn" method="POST">
-                <div class="form-group">
-                    <label for="inputEmail2">Email address</label>
-                    <input type="email" class="form-control" id="inputEmail2" aria-describedby="emailHelp" placeholder="Enter email">
-                </div>
-
-                <div class="form-group">
-                    <label for="inputPassword2">Password</label>
-                    <input type="password" class="form-control" id="inputPassword2" placeholder="Password">
-                </div>
-
-                <div class="form-group">
-                    <label for="inputName1">Name</label>
-                    <input type="text" class="form-control" id="inputName1" placeholder="Name">
-                </div>
-
-                <button type="submit" class="btn btn-primary">Submit</button>
-            </form>
-        </div>
-    </div>
-    <!--    <a href="/auth/allData" class="btn btn-primary">AData</a>-->
-</div>
 
 </body>
-<script>
-    var jwt;
-
-    function signIn(){
-        var data = new Map();
-        data["email"] = document.getElementById("inputEmail1").value;
-        data["password"] = document.getElementById("inputPassword1").value;
-        console.log(data["email"] + " " + data["password"]);
-        $.post({
-            url: '/auth/signIn',
-            data: JSON.stringify(data),
-            contentType: 'application/json; charset=utf-8',
-            success: function (response) {
-                jwt = response;
-            },
-            error: function () {
-                console.log("error");
-            }
-        })
-    }
-</script>
 </html>
