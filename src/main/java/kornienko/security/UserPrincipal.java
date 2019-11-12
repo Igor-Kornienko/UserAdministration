@@ -9,10 +9,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 @AllArgsConstructor
 @Getter
@@ -28,7 +25,7 @@ public class UserPrincipal implements UserDetails {
     private Collection<? extends GrantedAuthority> roles;
 
     public static UserPrincipal create(User user){
-        List<GrantedAuthority> roles = Arrays.asList(new SimpleGrantedAuthority(user.getRole()));
+        List<GrantedAuthority> roles = Collections.singletonList(new SimpleGrantedAuthority(user.getRole()));
 
         return new UserPrincipal(
                 user.getName(),

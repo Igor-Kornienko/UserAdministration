@@ -10,6 +10,7 @@ import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.services.drive.DriveScopes;
 import com.google.api.services.plus.PlusScopes;
 import kornienko.model.User;
+import kornienko.model.UserRole;
 import kornienko.security.JwtTokenProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -31,16 +32,16 @@ import java.util.List;
 @Service
 public class AuthService {
     @Autowired
-    AuthenticationManager authenticationManager;
-
-    @Autowired
     UserElasticsearchService userElasticsearchService;
 
     @Autowired
-    JwtTokenProvider tokenProvider;
+    JwtTokenProvider jwtTokenProvider;
 
     @Autowired
     PasswordEncoder passwordEncoder;
+
+    @Autowired
+    AuthenticationManager authenticationManager;
 
     private final static String CLIENT_SECRETS_FILE_PATH = "client_secret.json";
 
@@ -62,16 +63,16 @@ public class AuthService {
                 .build();
     }
 
-    public ResponseEntity<?> googleAuthUrl(){
+    public String googleAuthUrl(){
         String url =  flow
                 .newAuthorizationUrl()
                 .setRedirectUri(clientSecrets.getDetails().getRedirectUris().get(0))
                 .setAccessType("offline")
                 .build();
-        return ResponseEntity.ok(url);
+        return url;
     }
 
-    public ResponseEntity<?> codeExchange(String accessToken) throws IOException, InterruptedException {
+    public String codeExchange(String accessToken) throws IOException, InterruptedException {
         if (!accessToken.equals("")) {
             GoogleTokenResponse tokenResponse = flow.newTokenRequest(accessToken).setRedirectUri(clientSecrets.getDetails().getRedirectUris().get(0)).execute();
             String id = userElasticsearchService.userExist(tokenResponse.parseIdToken().getPayload().getEmail());
@@ -84,7 +85,7 @@ public class AuthService {
                 user.setGoogleAuth(true);
                 user.setGoogleTokenResponse(tokenResponse);
                 user.setName((String) tokenResponse.parseIdToken().getPayload().get("name"));
-                user.setRole("ROLE_USER");
+                user.setRole(UserRole.USER.name());
                 userElasticsearchService.saveUser(user);
                 System.out.println(user);
                 Thread.sleep(1000);
@@ -100,9 +101,9 @@ public class AuthService {
                     )
             );
             SecurityContextHolder.getContext().setAuthentication(authentication);
-            return ResponseEntity.ok("Bearer " + tokenProvider.generateToken(authentication));
+            return "Bearer " + jwtTokenProvider.generateToken(authentication);
         }
-        return ResponseEntity.badRequest().body("Not valid access token");
+        return "Not valid access token";
     }
 
     public ResponseEntity<?> signIn(String name, String password){
@@ -114,10 +115,10 @@ public class AuthService {
         );
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
-        return ResponseEntity.ok("Bearer " + tokenProvider.generateToken(authentication));
+        return ResponseEntity.ok("Bearer " + jwtTokenProvider.generateToken(authentication));
     }
 
-    public ResponseEntity<?> signUp(String email, String password, String name){
+    public ResponseEntity<?> signUp(String email, String password, String name) throws InterruptedException {
 
         String id = userElasticsearchService.userExist(email);
         System.out.println(id);
@@ -130,7 +131,7 @@ public class AuthService {
         user.setPassHash(passwordEncoder.encode(password));
         user.setName(name);
         user.setGoogleAuth(false);
-        user.setRole("ROLE_USER");
+        user.setRole(UserRole.USER.name());
         userElasticsearchService.saveUser(user);
 
         return ResponseEntity.ok("user created");

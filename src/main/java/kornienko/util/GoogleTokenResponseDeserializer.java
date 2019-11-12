@@ -1,4 +1,4 @@
-package kornienko.forGson;
+package kornienko.util;
 
 import com.google.api.client.googleapis.auth.oauth2.GoogleTokenResponse;
 import com.google.gson.JsonDeserializationContext;

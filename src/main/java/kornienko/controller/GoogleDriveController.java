@@ -1,6 +1,5 @@
 package kornienko.controller;
 
-import com.google.api.services.drive.model.File;
 import kornienko.service.GoogleDriveService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -30,9 +29,10 @@ public class GoogleDriveController {
     }
 
     @RequestMapping(value = "/download", method = RequestMethod.POST, produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
-    public @ResponseBody ResponseEntity<?> handleFileUpload(@RequestHeader (name = "Authorization") String jwt,
+    public @ResponseBody ResponseEntity<?> handleFileUpload(@RequestParam ("Authorization") String jwt,
                           @RequestParam("id") String newId,
                           HttpServletResponse response) throws IOException {
+        System.out.println("download " + newId);
         return googleDriveService.downloadFile(newId, response, jwt);
     }
 }

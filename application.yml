@@ -1,3 +1,4 @@
 security:
   jwtSecret: SRMBLMBSFShiftF
   jwtExpirationInMs: 86400000
+  tokenPrefix: Bearer

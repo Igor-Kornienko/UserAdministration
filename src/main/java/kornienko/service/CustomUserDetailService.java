@@ -14,6 +14,11 @@ public class CustomUserDetailService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String email) {
+        try {
+            userElasticsearchService.checkBaseAccs();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
         User user = userElasticsearchService.findUserByEmail(email);
         return UserPrincipal.create(user);
     }

@@ -3,28 +3,44 @@ package kornienko.controller;
 import kornienko.payload.LoginRequest;
 import kornienko.payload.SignUpRequest;
 import kornienko.service.AuthService;
+import kornienko.service.GoogleDriveService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.ModelAndView;
+import org.springframework.web.servlet.view.RedirectView;
 
 import javax.validation.Valid;
 import java.io.IOException;
 
-@RestController()
+@Controller
 @RequestMapping("auth")
 public class AuthController {
     @Autowired
     AuthService authService;
 
+    @Autowired
+    GoogleDriveService googleDriveService;
+
+    @RequestMapping(value = "/googleAuth", method = RequestMethod.GET)
+    public RedirectView googleAuthRedirect(){
+        return new RedirectView(authService.googleAuthUrl());
+    }
+
     @RequestMapping(value = "/getGoogleAuthUrl", method = RequestMethod.GET)
-    public ResponseEntity<?> googleAuthRedirect(){
-        return authService.googleAuthUrl();
+    public ResponseEntity<?> googleAuthUrl(){
+        return ResponseEntity.ok(authService.googleAuthUrl());
     }
 
     @RequestMapping(value = "/codeExchange", method = RequestMethod.GET)
-    public ResponseEntity<?> codeExchange(@RequestParam("code") String accessToken) throws IOException, InterruptedException {
-        return authService.codeExchange(accessToken);
+    public ModelAndView codeExchange(@RequestParam("code") String accessToken) throws IOException, InterruptedException {
+        ModelAndView model = new ModelAndView("googleDriveFiles");
+        String jwt = authService.codeExchange(accessToken);
+        model.addObject("jwt", jwt);
+        model.addObject("files", googleDriveService.getTop10Files(jwt));
+        return model;
     }
 
     @RequestMapping(value="/signIn", method = RequestMethod.POST,
@@ -35,7 +51,7 @@ public class AuthController {
 
     @RequestMapping(value="/signUp", method = RequestMethod.POST,
             consumes = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<?> signUp(@Valid @RequestBody SignUpRequest signUpRequest){
+    public ResponseEntity<?> signUp(@Valid @RequestBody SignUpRequest signUpRequest) throws InterruptedException {
         return authService.signUp(signUpRequest.getEmail(), signUpRequest.getPassword(), signUpRequest.getName());
     }
 

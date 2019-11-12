@@ -3,11 +3,13 @@ package kornienko.service;
 import com.google.api.client.googleapis.auth.oauth2.GoogleTokenResponse;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import kornienko.forGson.GoogleTokenResponseDeserializer;
-import kornienko.forGson.UserDeserializer;
+import kornienko.model.UserRole;
+import kornienko.util.GoogleTokenResponseDeserializer;
+import kornienko.util.UserDeserializer;
 import kornienko.model.User;
 import org.apache.tomcat.util.http.fileupload.IOUtils;
 import org.elasticsearch.action.admin.indices.create.CreateIndexResponse;
+import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsResponse;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.search.SearchResponse;
@@ -20,8 +22,10 @@ import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.transport.client.PreBuiltTransportClient;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.io.*;
@@ -39,6 +43,9 @@ public class UserElasticsearchService {
     @Value("classpath:elasticsearchMapper/users-index.json")
     private Resource index;
 
+    @Autowired
+    PasswordEncoder passwordEncoder;
+
     private Gson gson = new GsonBuilder()
             .setPrettyPrinting()
             .registerTypeAdapter(GoogleTokenResponse.class, new GoogleTokenResponseDeserializer())
@@ -52,7 +59,8 @@ public class UserElasticsearchService {
                         .put("cluster.name", "elasticsearch")
                         .build())
                 .addTransportAddress(new TransportAddress(InetAddress.getByName("127.0.0.1"), 9300));
-        IndicesExistsResponse existResponse = client.admin().indices().prepareExists("users").get();
+        //client.admin().indices().prepareDelete("users").execute().actionGet();
+        IndicesExistsResponse existResponse = client.admin().indices().prepareExists("users").execute().actionGet();
 
         if (!existResponse.isExists()) {
             try (final ByteArrayOutputStream out = new ByteArrayOutputStream()) {
@@ -70,16 +78,45 @@ public class UserElasticsearchService {
         }
     }
 
-    public void saveUser(User user) {
+
+    public void checkBaseAccs() throws InterruptedException {
+        if (userExist("guest") == null) {
+            User user = new User();
+            user.setEmail("guest");
+            user.setPassHash(passwordEncoder.encode("guest"));
+            user.setName("guest");
+            user.setGoogleAuth(false);
+            user.setRole(UserRole.GUEST.name().toLowerCase());
+
+            saveUser(user);
+            System.out.println("Created guest account");
+        }
+
+        if (userExist("admin") == null) {
+            User user = new User();
+            user.setEmail("admin");
+            user.setPassHash(passwordEncoder.encode("admin"));
+            user.setName("admin");
+            user.setGoogleAuth(false);
+            user.setRole(UserRole.ADMIN.name().toLowerCase());
+
+            saveUser(user);
+            System.out.println("Created admin account");
+        }
+    }
+
+    public void saveUser(User user) throws InterruptedException {
         String jsonBuff = gson.toJson(user);
         IndexResponse response = client.prepareIndex("users", "userInfo")
                 .setSource(jsonBuff, XContentType.JSON).get();
 
-        System.out.println("Id: " + response.getId());
-        System.out.println("Index: " + response.getIndex());
-        System.out.println("Type: " + response.getType());
-        System.out.println("Version: " + response.getVersion());
+        System.out.print("Id: " + response.getId());
+        System.out.print("Index: " + response.getIndex());
+        System.out.print("Type: " + response.getType());
+        System.out.print("Version: " + response.getVersion());
         System.out.println();
+
+        Thread.sleep(1000);
     }
 
     public void updateUser(String index, GoogleTokenResponse googleTokenResponse) {
@@ -89,11 +126,10 @@ public class UserElasticsearchService {
                 .setDoc(gson.toJson(buff), XContentType.JSON)
                 .setRetryOnConflict(5)
                 .execute()
-        .actionGet();
+                .actionGet();
     }
 
     public User findUserByEmail(String email) {
-
         SearchResponse response = client.prepareSearch("users")
                 .setSearchType(SearchType.DFS_QUERY_THEN_FETCH)
                 .setQuery(QueryBuilders.matchQuery("email", email))
@@ -112,9 +148,6 @@ public class UserElasticsearchService {
                 .get();
 
         if (response.getHits().getHits().length > 0) {
-            for (SearchHit a : response.getHits().getHits()) {
-                System.out.println("Id: " + a.getId() + " " + gson.fromJson(a.getSourceAsString(), User.class));
-            }
             return response.getHits().getHits()[0].getId();
         }
         return null;
@@ -128,5 +161,9 @@ public class UserElasticsearchService {
             users.put(hit.getId(), gson.fromJson(hit.getSourceAsString(), User.class));
         });
         return users;
+    }
+
+    public void deleteData() {
+        client.admin().indices().delete(new DeleteIndexRequest("users")).actionGet();
     }
 }

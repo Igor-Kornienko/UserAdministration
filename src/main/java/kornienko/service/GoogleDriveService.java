@@ -103,6 +103,20 @@ public class GoogleDriveService {
         }
     }
 
+    public List<File> getTop10Files(String jwt) throws IOException {
+        GoogleCredential googleCredential = getCredentialFromResponseToken(jwt);
+        if (googleCredential != null) {
+            Drive service = getDrive(googleCredential);
+            FileList result = service.files().list()
+                    .setPageSize(10)
+                    .setFields("nextPageToken, files(id, name)")
+                    .execute();
+            return result.getFiles();
+        } else {
+            return null;
+        }
+    }
+
     public ResponseEntity<?> uploadFile(String name, MultipartFile file, String jwt){
         if (file.isEmpty()) {
             return ResponseEntity.badRequest().body("File is empty");
@@ -121,7 +135,6 @@ public class GoogleDriveService {
         }
     }
 
-
     public ResponseEntity<?> downloadFile(String id, HttpServletResponse response, String jwt) throws IOException {
         GoogleCredential googleCredential = getCredentialFromResponseToken(jwt);
         if (googleCredential != null) {
@@ -130,14 +143,22 @@ public class GoogleDriveService {
             Drive.Files.Get fileGet = service.files().get(id);
             File gFile = fileGet.execute();
 
-            response.setHeader("Content-Disposition", "attachment; filename=" + gFile.getName());
-            response.setHeader("Content-Type", gFile.getMimeType());
+            MediaHttpDownloader downloader;
 
-            MediaHttpDownloader downloader = fileGet.getMediaHttpDownloader();
-            downloader.setDirectDownloadEnabled(false);
-            downloader.setChunkSize(1024 * 1024 * 8);
-            downloader.setProgressListener(new FileDownloadProgressListener(gFile.getName()));
-            fileGet.executeMediaAndDownloadTo(response.getOutputStream());
+            try {
+                setNameAndMime(response, gFile);
+                downloader = fileGet.getMediaHttpDownloader();
+                downloaderSettings(downloader);
+                downloader.setProgressListener(new FileDownloadProgressListener(gFile.getName()));
+                fileGet.executeMediaAndDownloadTo(response.getOutputStream());
+            } catch (Exception e) {
+                Drive.Files.Export export = service.files().export(id, "application/pdf");
+                setNameAndMime(response, gFile.getName(), "application/pdf");
+                downloader = export.getMediaHttpDownloader();
+                downloaderSettings(downloader);
+                downloader.setProgressListener(new FileDownloadProgressListener(gFile.getName()));
+                export.executeMediaAndDownloadTo(response.getOutputStream());
+            }
 
             return ResponseEntity.ok("Download started");
         }
@@ -152,5 +173,23 @@ public class GoogleDriveService {
         } else {
             return null;
         }
+    }
+
+    private void setNameAndMime(HttpServletResponse response, File file) {
+        response.setHeader("Content-Disposition", "attachment; filename=" + file.getName());
+        response.setHeader("Content-Type", file.getMimeType());
+    }
+
+    private void downloaderSettings(MediaHttpDownloader downloader){
+        downloader.setDirectDownloadEnabled(false);
+        downloader.setChunkSize(1024 * 1024 * 8);
+    }
+
+    private void setNameAndMime(HttpServletResponse response, String name, String mime) {
+        response.setHeader("Content-Disposition", "attachment; filename=" + name);
+        response.setHeader("Content-Type", mime);
+
+        System.out.println(response.getHeader("Content-Disposition"));
+        System.out.println(response.getHeader("Content-Type"));
     }
 }

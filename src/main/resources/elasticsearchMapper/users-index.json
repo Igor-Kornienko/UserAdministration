@@ -15,8 +15,7 @@
           "type" : "text"
         },
         "email" : {
-          "type" : "keyword",
-
+          "type" : "keyword"
         },
         "passHash" : {
           "type" : "keyword",
