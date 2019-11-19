@@ -11,6 +11,7 @@ import org.apache.tomcat.util.http.fileupload.IOUtils;
 import org.elasticsearch.action.admin.indices.create.CreateIndexResponse;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsResponse;
+import org.elasticsearch.action.delete.DeleteResponse;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchType;
@@ -165,5 +166,10 @@ public class UserElasticsearchService {
 
     public void deleteData() {
         client.admin().indices().delete(new DeleteIndexRequest("users")).actionGet();
+    }
+
+    public void deleteByEmail(String email){
+        String id = userExist(email);
+        DeleteResponse response = client.prepareDelete("users", "userInfo", id).get();
     }
 }

@@ -19,6 +19,7 @@ public class GoogleTokenResponseDeserializer implements JsonDeserializer<GoogleT
         if (jsonObject.has("id_token")) googleTokenResponse.setIdToken(jsonObject.get("id_token").getAsString());
         if (jsonObject.has("scope")) googleTokenResponse.setScope(jsonObject.get("scope").getAsString());
         if (jsonObject.has("token_type")) googleTokenResponse.setTokenType(jsonObject.get("token_type").getAsString());
+        if (jsonObject.has("refresh_token")) googleTokenResponse.setRefreshToken(jsonObject.get("refresh_token").getAsString());
 
         return googleTokenResponse;
     }

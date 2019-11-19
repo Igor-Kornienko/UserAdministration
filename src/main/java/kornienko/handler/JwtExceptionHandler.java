@@ -60,6 +60,14 @@ public class JwtExceptionHandler extends ResponseEntityExceptionHandler {
         return new WebException(ex);
     }
 
+    @ResponseBody
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ExceptionHandler({Exception.class})
+    public WebException handleException(final Exception ex){
+        log(ex,"Unknown exception");
+        return new WebException(ex);
+    }
+
     private void log (Exception ex, String message){
         System.out.println();
         logger.warn("\n" + message + "\n" + ex.getMessage() + "\n" + Arrays.toString(ex.getStackTrace()));

@@ -1,6 +1,7 @@
 package kornienko.security;
 
 import io.jsonwebtoken.*;
+import kornienko.handler.JwtExceptionHandler;
 import kornienko.service.CustomUserDetailService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -22,6 +23,9 @@ public class JwtTokenProvider {
 
     @Autowired
     CustomUserDetailService customUserDetailService;
+
+    @Autowired
+    JwtExceptionHandler jwtExceptionHandler;
 
     public UsernamePasswordAuthenticationToken authenticate(String jwt) throws AuthenticationException {
         UserDetails userDetails = getUserDetails(jwt);
@@ -58,7 +62,7 @@ public class JwtTokenProvider {
             Jwts.parser().setSigningKey(jwtSecret).parseClaimsJws(authToken);
             return true;
         } catch (SignatureException e) {
-            System.out.println("Invalid JWT signature");
+            jwtExceptionHandler.handleSignatureException(e);
         } catch (MalformedJwtException e) {
             System.out.println("Invalid JWT token");
         } catch (ExpiredJwtException e) {

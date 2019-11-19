@@ -9,6 +9,7 @@ import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.services.drive.DriveScopes;
 import com.google.api.services.plus.PlusScopes;
+import kornienko.handler.NonValidAccessTokenException;
 import kornienko.model.User;
 import kornienko.model.UserRole;
 import kornienko.security.JwtTokenProvider;
@@ -45,15 +46,13 @@ public class AuthService {
 
     private final static String CLIENT_SECRETS_FILE_PATH = "client_secret.json";
 
-    private JsonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
-    private final List<String> SCOPES = new ArrayList<>(Arrays.asList(DriveScopes.DRIVE, PlusScopes.USERINFO_EMAIL, PlusScopes.PLUS_LOGIN));
-
-    private NetHttpTransport HTTP_TRANSPORT;
     private GoogleClientSecrets clientSecrets;
     private GoogleAuthorizationCodeFlow flow;
 
     public AuthService() throws GeneralSecurityException, IOException {
-        HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
+        NetHttpTransport HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
+        List<String> SCOPES = new ArrayList<>(Arrays.asList(DriveScopes.DRIVE, PlusScopes.USERINFO_EMAIL, PlusScopes.PLUS_LOGIN));
+        JsonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
 
         clientSecrets = GoogleClientSecrets.load(JSON_FACTORY,
                 new InputStreamReader(new FileInputStream(new java.io.File(CLIENT_SECRETS_FILE_PATH))));
@@ -61,10 +60,10 @@ public class AuthService {
         flow = new GoogleAuthorizationCodeFlow.Builder(
                 HTTP_TRANSPORT, JSON_FACTORY, clientSecrets, SCOPES)
                 .build();
-    }
+     }
 
     public String googleAuthUrl(){
-        String url =  flow
+        String url = flow
                 .newAuthorizationUrl()
                 .setRedirectUri(clientSecrets.getDetails().getRedirectUris().get(0))
                 .setAccessType("offline")
@@ -72,8 +71,9 @@ public class AuthService {
         return url;
     }
 
-    public String codeExchange(String accessToken) throws IOException, InterruptedException {
+    public String codeExchange(String accessToken) throws IOException, InterruptedException, NonValidAccessTokenException {
         if (!accessToken.equals("")) {
+            System.out.println(accessToken);
             GoogleTokenResponse tokenResponse = flow.newTokenRequest(accessToken).setRedirectUri(clientSecrets.getDetails().getRedirectUris().get(0)).execute();
             String id = userElasticsearchService.userExist(tokenResponse.parseIdToken().getPayload().getEmail());
             System.out.println(id);
@@ -103,10 +103,10 @@ public class AuthService {
             SecurityContextHolder.getContext().setAuthentication(authentication);
             return "Bearer " + jwtTokenProvider.generateToken(authentication);
         }
-        return "Not valid access token";
+        throw new NonValidAccessTokenException("Not valid access token");
     }
 
-    public ResponseEntity<?> signIn(String name, String password){
+    public String signIn(String name, String password){
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         name,
@@ -115,7 +115,7 @@ public class AuthService {
         );
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
-        return ResponseEntity.ok("Bearer " + jwtTokenProvider.generateToken(authentication));
+        return "Bearer " + jwtTokenProvider.generateToken(authentication);
     }
 
     public ResponseEntity<?> signUp(String email, String password, String name) throws InterruptedException {

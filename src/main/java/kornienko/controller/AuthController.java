@@ -1,5 +1,6 @@
 package kornienko.controller;
 
+import kornienko.handler.NonValidAccessTokenException;
 import kornienko.payload.LoginRequest;
 import kornienko.payload.SignUpRequest;
 import kornienko.service.AuthService;
@@ -35,7 +36,7 @@ public class AuthController {
     }
 
     @RequestMapping(value = "/codeExchange", method = RequestMethod.GET)
-    public ModelAndView codeExchange(@RequestParam("code") String accessToken) throws IOException, InterruptedException {
+    public ModelAndView codeExchange(@RequestParam("code") String accessToken) throws IOException, InterruptedException, NonValidAccessTokenException {
         ModelAndView model = new ModelAndView("googleDriveFiles");
         String jwt = authService.codeExchange(accessToken);
         model.addObject("jwt", jwt);
@@ -46,7 +47,7 @@ public class AuthController {
     @RequestMapping(value="/signIn", method = RequestMethod.POST,
             consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> signIn(@Valid @RequestBody LoginRequest loginRequest){
-        return authService.signIn(loginRequest.getEmail(), loginRequest.getPassword());
+        return ResponseEntity.ok(authService.signIn(loginRequest.getEmail(), loginRequest.getPassword()));
     }
 
     @RequestMapping(value="/signUp", method = RequestMethod.POST,
