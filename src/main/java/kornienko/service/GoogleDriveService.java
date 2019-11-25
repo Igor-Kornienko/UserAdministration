@@ -105,6 +105,7 @@ public class GoogleDriveService {
 
     public List<File> getTop10Files(String jwt) throws IOException {
         GoogleCredential googleCredential = getCredentialFromResponseToken(jwt);
+        System.out.println();
         if (googleCredential != null) {
             Drive service = getDrive(googleCredential);
             FileList result = service.files().list()
@@ -169,7 +170,12 @@ public class GoogleDriveService {
         String email = jwtTokenProvider.getUserEmailFromJwt(jwt.substring(7));
         User user = elasticsearchService.findUserByEmail(email);
         if (user.getGoogleAuth()) {
-            return new GoogleCredential().setFromTokenResponse(user.getGoogleTokenResponse());
+            return new GoogleCredential().toBuilder()
+                    .setTransport(HTTP_TRANSPORT)
+                    .setJsonFactory(JSON_FACTORY)
+                    .setClientSecrets(clientSecrets)
+                    .build()
+                    .setFromTokenResponse(user.getGoogleTokenResponse());
         } else {
             return null;
         }
@@ -188,8 +194,5 @@ public class GoogleDriveService {
     private void setNameAndMime(HttpServletResponse response, String name, String mime) {
         response.setHeader("Content-Disposition", "attachment; filename=" + name);
         response.setHeader("Content-Type", mime);
-
-        System.out.println(response.getHeader("Content-Disposition"));
-        System.out.println(response.getHeader("Content-Type"));
     }
 }

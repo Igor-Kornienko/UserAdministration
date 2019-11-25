@@ -11,6 +11,7 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
+import javax.xml.bind.DatatypeConverter;
 import java.util.Date;
 
 @Component
@@ -29,9 +30,7 @@ public class JwtTokenProvider {
 
     public UsernamePasswordAuthenticationToken authenticate(String jwt) throws AuthenticationException {
         UserDetails userDetails = getUserDetails(jwt);
-        UsernamePasswordAuthenticationToken authentication =
-                new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-        return authentication;
+        return new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
     }
 
     public String generateToken(Authentication authentication) {
@@ -57,9 +56,11 @@ public class JwtTokenProvider {
         return customUserDetailService.loadUserByUsername(claims.getSubject());
     }
 
-    public boolean validateToken (String authToken) {
+    public boolean validateToken (String jwt) {
         try {
-            Jwts.parser().setSigningKey(jwtSecret).parseClaimsJws(authToken);
+            Jwts.parser()
+                    .setSigningKey(DatatypeConverter.parseBase64Binary(jwtSecret))
+                    .parseClaimsJws(jwt);
             return true;
         } catch (SignatureException e) {
             jwtExceptionHandler.handleSignatureException(e);
@@ -75,12 +76,11 @@ public class JwtTokenProvider {
         return false;
     }
 
-    public String getUserEmailFromJwt(String token) {
-        Claims claims = Jwts.parser()
-                .setSigningKey(jwtSecret)
-                .parseClaimsJws(token)
-                .getBody();
-
-        return claims.getSubject();
+    public String getUserEmailFromJwt(String jwt) {
+        return Jwts.parser()
+                .setSigningKey(DatatypeConverter.parseBase64Binary(jwtSecret))
+                .parseClaimsJws(jwt)
+                .getBody()
+                .getSubject();
     }
 }

@@ -40,7 +40,10 @@ public class AuthController {
         ModelAndView model = new ModelAndView("googleDriveFiles");
         String jwt = authService.codeExchange(accessToken);
         model.addObject("jwt", jwt);
+        System.out.println(jwt);
         model.addObject("files", googleDriveService.getTop10Files(jwt));
+        System.out.println(2);
+        System.out.println(model);
         return model;
     }
 

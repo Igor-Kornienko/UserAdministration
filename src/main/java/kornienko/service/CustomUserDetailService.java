@@ -3,6 +3,7 @@ package kornienko.service;
 import kornienko.model.User;
 import kornienko.security.UserPrincipal;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Service;
@@ -20,6 +21,11 @@ public class CustomUserDetailService implements UserDetailsService {
             e.printStackTrace();
         }
         User user = userElasticsearchService.findUserByEmail(email);
-        return UserPrincipal.create(user);
+        System.out.println(user);
+        if (user != null) {
+            return UserPrincipal.create(user);
+        } else {
+            throw new BadCredentialsException("");
+        }
     }
 }

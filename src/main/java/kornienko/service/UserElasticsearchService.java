@@ -170,6 +170,8 @@ public class UserElasticsearchService {
 
     public void deleteByEmail(String email){
         String id = userExist(email);
-        DeleteResponse response = client.prepareDelete("users", "userInfo", id).get();
+        if (id != null) {
+            client.prepareDelete("users", "userInfo", id).get();
+        }
     }
 }

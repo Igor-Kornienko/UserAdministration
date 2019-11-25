@@ -63,20 +63,17 @@ public class AuthService {
      }
 
     public String googleAuthUrl(){
-        String url = flow
+        return flow
                 .newAuthorizationUrl()
                 .setRedirectUri(clientSecrets.getDetails().getRedirectUris().get(0))
                 .setAccessType("offline")
                 .build();
-        return url;
     }
 
     public String codeExchange(String accessToken) throws IOException, InterruptedException, NonValidAccessTokenException {
         if (!accessToken.equals("")) {
-            System.out.println(accessToken);
             GoogleTokenResponse tokenResponse = flow.newTokenRequest(accessToken).setRedirectUri(clientSecrets.getDetails().getRedirectUris().get(0)).execute();
             String id = userElasticsearchService.userExist(tokenResponse.parseIdToken().getPayload().getEmail());
-            System.out.println(id);
 
             if (id == null) {
                 User user = new User();
@@ -121,7 +118,6 @@ public class AuthService {
     public ResponseEntity<?> signUp(String email, String password, String name) throws InterruptedException {
 
         String id = userElasticsearchService.userExist(email);
-        System.out.println(id);
         if (!(id == null)) {
             return ResponseEntity.badRequest().body("This email already in use");
         }

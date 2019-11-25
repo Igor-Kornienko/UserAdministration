@@ -1,4 +1,7 @@
 package serviceTest;
 
-public class GoogleDriveServiceJUnit4Test {
+import org.junit.Assert;
+
+public class GoogleDriveServiceJUnit4Test extends Assert {
+
 }
