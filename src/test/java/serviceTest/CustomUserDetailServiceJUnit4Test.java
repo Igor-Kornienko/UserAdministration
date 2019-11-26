@@ -11,6 +11,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -21,29 +22,22 @@ public class CustomUserDetailServiceJUnit4Test extends Assert {
     CustomUserDetailService customUserDetailService;
 
     @Autowired
-    UserElasticsearchService userElasticsearchService;
-
-    @Autowired
     AuthService authService;
 
-    @Before
-    public void beforeTest() throws InterruptedException {
-        authService.signUp("testUser@gmail.com", "testUser", "testUser");
-    }
-
-    @After
-    public void afterTest() {
-        userElasticsearchService.deleteByEmail("testUser@gmail.com");
-    }
-
     @Test
-    public void testLoadUserByUsername() {
+    public void testLoadUserByUsername() throws InterruptedException {
+        authService.signUp("testUser@gmail.com", "testUser", "testUser");
+        Thread.sleep(1000);
+
         UserDetails test = customUserDetailService.loadUserByUsername("testUser@gmail.com");
         System.out.println(test);
     }
 
-    @Test(expected = NullPointerException.class)
-    public void testLoadUserByUsernameFail() {
+    @Test(expected = BadCredentialsException.class)
+    public void testLoadUserByUsernameBadCredentials() throws InterruptedException {
+        authService.signUp("testUser@gmail.com", "testUser", "testUser");
+        Thread.sleep(1000);
+
         UserDetails test = customUserDetailService.loadUserByUsername("tstUser@gmail.com");
         System.out.println(test);
     }

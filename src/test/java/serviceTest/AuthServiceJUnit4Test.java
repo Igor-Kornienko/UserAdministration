@@ -41,19 +41,6 @@ public class AuthServiceJUnit4Test extends Assert {
         assertEquals(StringUtils.startsWithIgnoreCase(url, "https://accounts.google.com/o/oauth2/"), true);
     }
 
-    /*@Test
-    public void testCodeExchange() throws InterruptedException, NonValidAccessTokenException, IOException {
-        String accessToken = "4/tQFP-xmxbHQJvNdoJtHeeTu1bTdnEnnExk5ydHRrmJrQcEnS6hXlQkDg-k2qXr3yOQVH2F9C-wXuWdTDWQ7cXP0";
-        String jwt = authService.codeExchange(accessToken);
-        assertEquals(StringUtils.startsWithIgnoreCase(accessToken, "Bearer "), true);
-    }
-
-    @Test(expected = NonValidAccessTokenException.class)
-    public void testCodeExchangeNonValid() throws InterruptedException, NonValidAccessTokenException, IOException {
-        String accessToken = "4/tQFP-xmxbHQJvNdoJtqXr3yOQVH2F9C-wXuWdTDWQ7cXP0";
-        String jwt = authService.codeExchange(accessToken);
-    }*/
-
     @Test(expected = NonValidAccessTokenException.class)
     public void test2CodeExchangeNullValue() throws InterruptedException, NonValidAccessTokenException, IOException {
         String accessToken = "";
@@ -61,18 +48,20 @@ public class AuthServiceJUnit4Test extends Assert {
     }
 
     @Test
-    public void test3SignUp() throws InterruptedException {
+    public void test4SignIn() throws InterruptedException {
+        userElasticsearchService.deleteByEmail("testUser@gmail.com");
+        Thread.sleep(1000);
+        System.out.println(userElasticsearchService.userExist("testUser@gmail.com"));
+
         assertEquals(authService.signUp("testUser@gmail.com", "testUser", "testUser"),
                 ResponseEntity.ok("user created"));
+        Thread.sleep(1000);
         assertEquals(authService.signUp("testUser@gmail.com", "testUser", "testUser"),
                 ResponseEntity.badRequest().body("This email already in use"));
-    }
 
-    @Test
-    public void test4SignIn() {
         String jwt = authService.signIn("testUser@gmail.com", "testUser");
         System.out.println(jwt);
-        assertEquals(StringUtils.startsWithIgnoreCase(jwt, "Bearer "), true);
+        assertTrue(StringUtils.startsWithIgnoreCase(jwt, "Bearer "));
     }
 
     @Test(expected = Exception.class)

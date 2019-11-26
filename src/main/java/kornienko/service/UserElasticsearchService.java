@@ -11,7 +11,6 @@ import org.apache.tomcat.util.http.fileupload.IOUtils;
 import org.elasticsearch.action.admin.indices.create.CreateIndexResponse;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsResponse;
-import org.elasticsearch.action.delete.DeleteResponse;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchType;
@@ -26,6 +25,7 @@ import org.elasticsearch.transport.client.PreBuiltTransportClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -60,7 +60,7 @@ public class UserElasticsearchService {
                         .put("cluster.name", "elasticsearch")
                         .build())
                 .addTransportAddress(new TransportAddress(InetAddress.getByName("127.0.0.1"), 9300));
-        //client.admin().indices().prepareDelete("users").execute().actionGet();
+        client.admin().indices().prepareDelete("users").execute().actionGet();
         IndicesExistsResponse existResponse = client.admin().indices().prepareExists("users").execute().actionGet();
 
         if (!existResponse.isExists()) {
@@ -106,7 +106,7 @@ public class UserElasticsearchService {
         }
     }
 
-    public void saveUser(User user) throws InterruptedException {
+    public IndexResponse saveUser(User user) {
         String jsonBuff = gson.toJson(user);
         IndexResponse response = client.prepareIndex("users", "userInfo")
                 .setSource(jsonBuff, XContentType.JSON).get();
@@ -117,13 +117,17 @@ public class UserElasticsearchService {
         System.out.print("Version: " + response.getVersion());
         System.out.println();
 
-        Thread.sleep(1000);
+        return response;
     }
 
-    public void updateUser(String index, GoogleTokenResponse googleTokenResponse) {
-        User buff = gson.fromJson(client.prepareGet("users", "userInfo", index).get().getSourceAsString(), User.class);
+    public void updateUser(String id, GoogleTokenResponse googleTokenResponse) {
+
+        System.out.println(id);
+        User buff = gson.fromJson(client.prepareGet("users", "userInfo", id).get().getSourceAsString(), User.class);
+        System.out.println(buff);
         buff.setGoogleTokenResponse(googleTokenResponse);
-        client.prepareUpdate("users", "userInfo", index)
+        buff.setGoogleAuth(true);
+        client.prepareUpdate("users", "userInfo", id)
                 .setDoc(gson.toJson(buff), XContentType.JSON)
                 .setRetryOnConflict(5)
                 .execute()
@@ -154,7 +158,7 @@ public class UserElasticsearchService {
         return null;
     }
 
-    public Map<String, User> searchAllTestData() {
+    public Map<String, User> searchAllData() {
         SearchResponse response = client.prepareSearch().setSize(1000).execute().actionGet();
         List<SearchHit> searchHits = Arrays.asList(response.getHits().getHits());
         Map<String, User> users = new HashMap<>();
@@ -164,7 +168,7 @@ public class UserElasticsearchService {
         return users;
     }
 
-    public void deleteData() {
+    public void deleteAllData() {
         client.admin().indices().delete(new DeleteIndexRequest("users")).actionGet();
     }
 

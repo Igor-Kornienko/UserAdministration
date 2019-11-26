@@ -2,6 +2,7 @@ package kornienko.model;
 
 import com.google.api.client.googleapis.auth.oauth2.GoogleTokenResponse;
 import lombok.Data;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 @Data
 public class User {

@@ -134,6 +134,6 @@ public class AuthService {
     }
 
     public ResponseEntity<?> users(){
-        return ResponseEntity.ok(userElasticsearchService.searchAllTestData());
+        return ResponseEntity.ok(userElasticsearchService.searchAllData());
     }
 }

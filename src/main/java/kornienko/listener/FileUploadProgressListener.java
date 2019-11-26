@@ -11,7 +11,7 @@ public class FileUploadProgressListener implements MediaHttpUploaderProgressList
     private String mFileUploadedName;
     private long bytesCount;
 
-    DecimalFormat df = new DecimalFormat("#.##");
+    private DecimalFormat df = new DecimalFormat("#.##");
 
     public FileUploadProgressListener(String fileName, long bytesCount) {
         mFileUploadedName = fileName;
@@ -19,7 +19,7 @@ public class FileUploadProgressListener implements MediaHttpUploaderProgressList
     }
 
     @Override
-    public void progressChanged(MediaHttpUploader mediaHttpUploader) throws IOException {
+    public void progressChanged(MediaHttpUploader mediaHttpUploader) {
         if (mediaHttpUploader == null) return;
         switch (mediaHttpUploader.getUploadState()) {
             case INITIATION_STARTED:
